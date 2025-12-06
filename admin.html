@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>XINNDESAINER — Admin Panel</title>
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<style>
+  :root{
+    --bg:#071025;
+    --card:#0e1723;
+    --muted:#9fb0c9;
+    --accent:#00f0ff;
+    --accent2:#ff0066;
+  }
+  *{box-sizing:border-box;font-family: Inter, system-ui, Arial;}
+  body{margin:0;background:linear-gradient(180deg,#02030a,#071025);color:#e6f0f8;min-height:100vh;}
+  header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.03)}
+  h1{font-size:18px;margin:0;color:var(--accent)}
+  .container{max-width:1200px;margin:18px auto;padding:18px;}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03);padding:14px;border-radius:10px;margin-bottom:12px;}
+  label{display:block;color:var(--muted);font-size:13px;margin-bottom:6px}
+  input[type=text], input[type=number], textarea, select{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#fff;margin-bottom:10px}
+  button{background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;padding:10px 12px;border-radius:10px;color:#02111a;font-weight:700;cursor:pointer}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .small{font-size:13px;color:var(--muted)}
+  .flex{display:flex;gap:8px;align-items:center}
+  .list{max-height:240px;overflow:auto;padding:8px;border-radius:8px;border:1px dashed rgba(255,255,255,0.03);background:rgba(0,0,0,0.1)}
+  .btn-danger{background:transparent;color:#ff7b7b;border:1px solid rgba(255,123,123,0.12);padding:8px;border-radius:8px}
+  .top-actions{display:flex;gap:8px;align-items:center}
+  .kbd{background:#0b1220;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.03)}
+  /* login */
+  .login-wrap{max-width:420px;margin:60px auto;padding:20px}
+  .hidden{display:none}
+  footer{padding:20px;text-align:center;color:var(--muted);font-size:13px}
+  @media(max-width:900px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>XINNDESAINER Admin</h1>
+  <div class="top-actions">
+    <div class="small">Connected: <span id="connectedStatus">—</span></div>
+    <div id="adminName" class="kbd hidden">Admin</div>
+    <button id="logoutBtn" class="btn-danger hidden">Logout</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- LOGIN -->
+  <div id="loginBox" class="card login-wrap">
+    <h2 style="margin-top:0">Login Admin</h2>
+    <label>Username</label>
+    <input id="loginUser" type="text" placeholder="Admin">
+    <label>Password</label>
+    <input id="loginPass" type="password" placeholder="Admin123">
+    <div style="display:flex;gap:8px">
+      <button id="loginBtn">Login</button>
+      <button id="demoBtn" class="btn-danger">Demo (read-only)</button>
+    </div>
+    <p class="small" style="margin-top:8px">Login sederhana — untuk keamanan produksi gunakan Firebase Auth.</p>
+  </div>
+
+  <!-- PANEL -->
+  <div id="panel" class="hidden">
+
+    <!-- STATUS TOKO -->
+    <section class="card">
+      <h3>Status Toko</h3>
+      <p class="small">Control buka / tutup website. Jika tutup, web utama akan menampilkan halaman "web ditutup".</p>
+      <div class="flex" style="margin-top:8px">
+        <button onclick="setStatus(1)">Buka Toko</button>
+        <button onclick="setStatus(0)" class="btn-danger">Tutup Toko</button>
+        <div style="margin-left:auto" class="small">Nilai sekarang: <b id="statusValue">—</b></div>
+      </div>
+    </section>
+
+    <!-- NOMOR WA -->
+    <section class="card">
+      <h3>Nomor WhatsApp</h3>
+      <div class="row">
+        <div>
+          <label>Nomor (format: 628... tanpa +)</label>
+          <input id="inputWA" type="text" placeholder="6287867162459">
+          <button onclick="saveWA()">Simpan Nomor</button>
+        </div>
+        <div>
+          <label>Preview Tombol</label>
+          <div style="display:flex;align-items:center;gap:8px">
+            <a id="previewWA" class="kbd" href="#" target="_blank">Buka WA</a>
+            <div class="small">Gunakan untuk test pesan langsung</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HARGA -->
+    <section class="card">
+      <h3>Harga Paket</h3>
+      <div class="row">
+        <div>
+          <label>Paket Express</label>
+          <input id="hargaExpressInput" type="number" min="0">
+          <label>Paket Basic</label>
+          <input id="hargaBasicInput" type="number" min="0">
+          <label>Paket Premium</label>
+          <input id="hargaPremiumInput" type="number" min="0">
+          <button onclick="saveHarga()">Simpan Harga</button>
+        </div>
+        <div>
+          <label>Preview di web utama</label>
+          <div class="card small" id="hargaPreview">...loading</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HERO & MARQUEE -->
+    <section class="card">
+      <h3>Hero / Teks / Marquee</h3>
+      <label>Judul Hero</label>
+      <input id="heroTitleInput" type="text">
+      <label>Subtitle (HTML allowed)</label>
+      <textarea id="heroSubInput" rows="3"></textarea>
+      <label>Marquee (running text)</label>
+      <input id="heroMarqueeInput" type="text">
+      <label>Price range text</label>
+      <input id="heroPriceRangeInput" type="text" placeholder="Contoh: 2K - 7K">
+      <div style="display:flex;gap:8px">
+        <button onclick="saveHero()">Simpan Teks</button>
+        <button onclick="resetHeroDefaults()" class="btn-danger">Reset Default</button>
+      </div>
+    </section>
+
+    <!-- REKOMENDASI -->
+    <section class="card">
+      <h3>Rekomendasi</h3>
+      <label>Text rekomendasi</label>
+      <textarea id="inputRekom" rows="2"></textarea>
+      <div style="display:flex;gap:8px"><button onclick="saveRekom()">Simpan</button></div>
+    </section>
+
+    <!-- PORTFOLIO -->
+    <section class="card">
+      <h3>Portfolio</h3>
+      <label>Tambah URL gambar</label>
+      <input id="urlPortfolio" type="text" placeholder="https://...">
+      <div style="display:flex;gap:8px"><button onclick="addPortfolio()">Tambah Portfolio</button></div>
+      <h4 style="margin-top:10px">Daftar Portfolio</h4>
+      <div id="adminPortfolioList" class="list">Memuat…</div>
+    </section>
+
+    <!-- ORDERS -->
+    <section class="card">
+      <h3>Orders Masuk</h3>
+      <div id="orderList" class="list">Memuat…</div>
+    </section>
+
+    <!-- DEPOSIT -->
+    <section class="card">
+      <h3>Deposit</h3>
+      <div class="row">
+        <div>
+          <label>Nama</label>
+          <input id="depNama" type="text">
+          <label>Jumlah (Rp)</label>
+          <input id="depJumlah" type="number" min="1000">
+          <div style="display:flex;gap:8px">
+            <button onclick="addDeposit()">Tambah Deposit</button>
+          </div>
+        </div>
+        <div>
+          <h4>Riwayat Deposit</h4>
+          <div id="depositList" class="list">Memuat…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SYSTEM -->
+    <section class="card">
+      <h3>System / Tools</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="reloadPage()">Reload Panel</button>
+        <button onclick="openMainSite()">Buka Web Utama</button>
+        <button onclick="exportOrders()">Export Orders JSON</button>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<footer>© <span id="yearFoot"></span> XINNDESAINER — Admin Panel</footer>
+
+<!-- FIREBASE (v8 compat) -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<script>
+/* ======================
+   FIREBASE CONFIG (pakai config mu)
+====================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyB4L9CUFN049AytK8b3xxT-qC7WPVcagOw",
+  authDomain: "xinndesainer-web.firebaseapp.com",
+  databaseURL: "https://xinndesainer-web-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "xinndesainer-web",
+  storageBucket: "xinndesainer-web.firebasestorage.app",
+  messagingSenderId: "149928716168",
+  appId: "1:149928716168:web:80e99e60fb8531f0e4bc3d",
+  measurementId: "G-1GWM4KV6T2"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ================
+   UTIL
+=============== */
+function $(id){ return document.getElementById(id); }
+function pushData(path, obj){ return db.ref(path).push(obj); }
+
+/* ======================
+   LOGIN (sederhana, client-side)
+====================== */
+const ADMIN_USER = "Admin";
+const ADMIN_PASS = "Admin123";
+const loginBox = $("loginBox");
+const panel = $("panel");
+const logoutBtn = $("logoutBtn");
+const adminName = $("adminName");
+
+function showPanel(){
+  loginBox.classList.add("hidden");
+  panel.classList.remove("hidden");
+  adminName.classList.remove("hidden");
+  logoutBtn.classList.remove("hidden");
+}
+function showLogin(){
+  loginBox.classList.remove("hidden");
+  panel.classList.add("hidden");
+  adminName.classList.add("hidden");
+  logoutBtn.classList.add("hidden");
+}
+
+$("loginBtn").addEventListener("click", ()=>{
+  const u = $("loginUser").value.trim();
+  const p = $("loginPass").value.trim();
+  if(u === ADMIN_USER && p === ADMIN_PASS){
+    localStorage.setItem("xin_admin", "1");
+    showPanel();
+    initAdmin(); // start listeners
+  } else {
+    alert("Login gagal.");
+  }
+});
+
+$("demoBtn").addEventListener("click", ()=>{
+  alert("Masuk demo (read-only). Untuk menyimpan, login dengan kredensial admin.");
+  localStorage.setItem("xin_admin", "0");
+  showPanel();
+  initAdmin(true);
+});
+
+logoutBtn.addEventListener("click", ()=>{
+  localStorage.removeItem("xin_admin");
+  showLogin();
+});
+
+/* auto-login jika sudah */
+if(localStorage.getItem("xin_admin")){
+  // jika admin = "1" we allow save, else read-only
+  const readOnly = localStorage.getItem("xin_admin") === "0";
+  if(!readOnly) {
+    showPanel(); initAdmin(false);
+  } else {
+    showPanel(); initAdmin(true);
+  }
+}
+
+/* =========================
+   MAIN: INIT & LISTENERS
+========================= */
+let isReadOnly = false;
+function initAdmin(readOnly = false){
+  isReadOnly = readOnly;
+
+  // connection status
+  const connectedRef = firebase.database().ref(".info/connected");
+  connectedRef.on("value", snap=>{
+    const v = snap.val();
+    $("connectedStatus").textContent = v ? "online" : "offline";
+  });
+
+  // status toko
+  db.ref("web/statusToko").on("value", snap=>{
+    const v = snap.exists() ? snap.val() : "1";
+    $("statusValue").textContent = v === "1" ? "BUKA" : "TUTUP";
+  });
+
+  // nomor WA
+  db.ref("web/nomorWA").on("value", snap=>{
+    const v = snap.exists() ? snap.val() : "6287867162459";
+    $("inputWA").value = v;
+    $("previewWA").href = "https://wa.me/" + v;
+    $("previewWA").textContent = "wa: " + v;
+  });
+
+  // harga
+  db.ref("web/harga").on("value", snap=>{
+    const h = snap.val() || {};
+    $("hargaExpressInput").value = h.express || "";
+    $("hargaBasicInput").value = h.basic || "";
+    $("hargaPremiumInput").value = h.premium || "";
+    $("hargaPreview").innerHTML = `
+      <div>Express: <b id="hargaExpress">${h.express||"-"}</b></div>
+      <div>Basic: <b id="hargaBasic">${h.basic||"-"}</b></div>
+      <div>Premium: <b id="hargaPremium">${h.premium||"-"}</b></div>
+    `;
+  });
+
+  // hero texts
+  db.ref("web/texts").on("value", snap=>{
+    const t = snap.val() || {};
+    $("heroTitleInput").value = t.title || "XINNDESAINER";
+    $("heroSubInput").value = t.subtitle || "Selamat datang";
+    $("heroMarqueeInput").value = t.marquee || "";
+    $("heroPriceRangeInput").value = t.priceRange || "";
+  });
+
+  // rekomendasi
+  db.ref("web/rekomendasi").on("value", snap=>{
+    $("inputRekom").value = snap.exists() ? snap.val() : "";
+  });
+
+  // portfolio (list handled in separate function)
+  loadPortfolioAdmin();
+
+  // orders
+  loadOrdersAdmin();
+
+  // deposits
+  loadDepositsAdmin();
+}
+
+/* ======================
+   ACTIONS (set / save)
+====================== */
+function setStatus(v){
+  if(isReadOnly) return alert("Read-only demo. Login admin untuk menyimpan.");
+  db.ref("web/statusToko").set(String(v)).then(()=>alert("Status disimpan."));
+}
+
+function saveWA(){
+  if(isReadOnly) return alert("Read-only demo.");
+  const v = $("inputWA").value.trim();
+  if(!v) return alert("Isi nomor.");
+  db.ref("web/nomorWA").set(v).then(()=>alert("Nomor WA diperbarui."));
+}
+
+function saveHarga(){
+  if(isReadOnly) return alert("Read-only demo.");
+  const obj = {
+    express: $("hargaExpressInput").value || "",
+    basic: $("hargaBasicInput").value || "",
+    premium: $("hargaPremiumInput").value || ""
+  };
+  db.ref("web/harga").set(obj).then(()=>alert("Harga disimpan."));
+}
+
+function saveHero(){
+  if(isReadOnly) return alert("Read-only demo.");
+  const obj = {
+    title: $("heroTitleInput").value || "",
+    subtitle: $("heroSubInput").value || "",
+    marquee: $("heroMarqueeInput").value || "",
+    priceRange: $("heroPriceRangeInput").value || ""
+  };
+  db.ref("web/texts").set(obj).then(()=>alert("Teks hero disimpan."));
+}
+
+function resetHeroDefaults(){
+  if(isReadOnly) return alert("Read-only demo.");
+  const def = {
+    title: "XINNDESAINER",
+    subtitle: "Solusi desain logo profesional dengan sentuhan premium",
+    marquee: "✨ GRAND OPENING — DESAIN LOGO PREMIUM MULAI 2K ✨",
+    priceRange: "2K – 7K"
+  };
+  db.ref("web/texts").set(def).then(()=>alert("Di-reset ke default."));
+}
+
+function saveRekom(){
+  if(isReadOnly) return alert("Read-only demo.");
+  const v = $("inputRekom").value || "";
+  db.ref("web/rekomendasi").set(v).then(()=>alert("Rekomendasi disimpan."));
+}
+
+/* ======================
+   PORTFOLIO
+====================== */
+function addPortfolio(){
+  if(isReadOnly) return alert("Read-only demo.");
+  const url = $("urlPortfolio").value.trim();
+  if(!url) return alert("URL kosong.");
+  // push new item as value (we store as map of key -> url)
+  pushData("web/portfolio", url).then(()=>{
+    $("urlPortfolio").value = "";
+    alert("Portfolio ditambahkan.");
+  }).catch(e=>{ console.error(e); alert("Gagal menambah."); });
+}
+
+function loadPortfolioAdmin(){
+  const div = $("adminPortfolioList");
+  db.ref("web/portfolio").on("value", snap=>{
+    const data = snap.val() || {};
+    div.innerHTML = "";
+    Object.keys(data).forEach(k=>{
+      const url = data[k];
+      const wrapper = document.createElement("div");
+      wrapper.style.marginBottom = "8px";
+      wrapper.style.padding = "8px";
+      wrapper.style.display = "flex";
+      wrapper.style.alignItems = "center";
+      wrapper.style.gap = "8px";
+
+      const img = document.createElement("img");
+      img.src = url;
+      img.width = 120;
+      img.style.borderRadius = "8px";
+      img.style.objectFit = "cover";
+      img.style.border = "1px solid rgba(255,255,255,0.03)";
+
+      const right = document.createElement("div");
+      right.style.flex = "1";
+      right.innerHTML = `<div style="font-size:13px;color:var(--muted)">${url}</div>`;
+      const del = document.createElement("button");
+      del.textContent = "Hapus";
+      del.className = "btn-danger";
+      del.onclick = ()=> {
+        if(isReadOnly) return alert("Read-only demo.");
+        if(!confirm("Hapus item portfolio ini?")) return;
+        db.ref("web/portfolio/"+k).remove();
+      };
+
+      wrapper.appendChild(img);
+      wrapper.appendChild(right);
+      wrapper.appendChild(del);
+      div.appendChild(wrapper);
+    });
+
+    if(Object.keys(data).length === 0) div.innerHTML = "<div class='small'>Belum ada portfolio</div>";
+  });
+}
+
+/* ======================
+   ORDERS
+====================== */
+function loadOrdersAdmin(){
+  const out = $("orderList");
+  db.ref("orders").on("value", snap=>{
+    const data = snap.val() || {};
+    out.innerHTML = "";
+    if(!Object.keys(data).length){ out.innerHTML = "<div class='small'>Belum ada order.</div>"; return; }
+    Object.keys(data).reverse().forEach(id=>{
+      const o = data[id];
+      const wrap = document.createElement("div");
+      wrap.style.display = "flex";
+      wrap.style.flexDirection = "column";
+      wrap.style.gap = "6px";
+      wrap.style.padding = "8px";
+      wrap.style.borderBottom = "1px dashed rgba(255,255,255,0.02)";
+
+      const top = document.createElement("div");
+      top.innerHTML = `<b>${o.nama || "-"}</b> — ${o.brand || "-"} <span class="small">(${new Date(o.waktu).toLocaleString()})</span>`;
+      const info = document.createElement("div");
+      info.innerHTML = `<div>Warna: ${o.warna || "-"}</div><div>Style: ${o.style || "-"}</div><div>Paket: ${o.paket || "-"}</div>`;
+      const note = document.createElement("div");
+      note.className = "small";
+      note.textContent = "Detail: " + (o.detail || "-") + " | Catatan: " + (o.catatan || "-");
+      const btns = document.createElement("div");
+      btns.style.display = "flex"; btns.style.gap = "8px"; btns.style.marginTop = "6px";
+      const del = document.createElement("button"); del.className = "btn-danger"; del.textContent = "Hapus";
+      del.onclick = ()=> {
+        if(isReadOnly) return alert("Read-only demo.");
+        if(!confirm("Hapus order ini?")) return;
+        db.ref("orders/"+id).remove();
+      };
+      btns.appendChild(del);
+
+      wrap.appendChild(top); wrap.appendChild(info); wrap.appendChild(note); wrap.appendChild(btns);
+      out.appendChild(wrap);
+    });
+  });
+}
+
+/* ======================
+   DEPOSITS
+====================== */
+function addDeposit(){
+  if(isReadOnly) return alert("Read-only demo.");
+  const nama = $("depNama").value.trim();
+  const jumlah = Number($("depJumlah").value);
+  if(!nama || !jumlah) return alert("Isi nama & jumlah.");
+  pushData("deposits", { nama, jumlah, waktu: Date.now() }).then(()=>{
+    $("depNama").value = ""; $("depJumlah").value = "";
+    alert("Deposit ditambahkan.");
+  });
+}
+
+function loadDepositsAdmin(){
+  const out = $("depositList");
+  db.ref("deposits").on("value", snap=>{
+    const data = snap.val() || {};
+    out.innerHTML = "";
+    if(!Object.keys(data).length) { out.innerHTML = "<div class='small'>Belum ada deposit</div>"; return; }
+    Object.keys(data).reverse().forEach(id=>{
+      const it = data[id];
+      const row = document.createElement("div");
+      row.style.padding = "8px";
+      row.style.borderBottom = "1px dashed rgba(255,255,255,0.02)";
+      row.innerHTML = `<b>${it.nama}</b> — Rp ${Number(it.jumlah).toLocaleString()} <div class='small'>${new Date(it.waktu).toLocaleString()}</div>`;
+      out.appendChild(row);
+    });
+  });
+}
+
+/* ======================
+   UTILS
+====================== */
+function reloadPage(){ location.reload(); }
+function openMainSite(){ window.open("/", "_blank"); } // edit jika web utama beda
+function exportOrders(){
+  db.ref("orders").once("value").then(snap=>{
+    const data = snap.val() || {};
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "orders.json"; a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
+document.getElementById("yearFoot").textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
